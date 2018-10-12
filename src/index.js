@@ -8,6 +8,13 @@ import VolumeMute from '@material-ui/icons/VolumeMute'
 import PlayArrow from '@material-ui/icons/PlayArrow'
 import Pause from '@material-ui/icons/Pause'
 
+const defaultStates = {
+    isMuted: false,
+    isPlaying: true,
+    opacity: 0.8,
+    url: "https://www.youtube.com/embed/XJKCZMwo8Hw",
+}
+
 const styles = {
     ReactPlayer: {
         width: "100vw",
@@ -28,80 +35,86 @@ const styles = {
         width: "100%",
         alignItems: "center",
     },
-    PanelComponents: {
+    PanelComponent: {
         marginRight: "12px",
         border: "1px #fff solid",
         borderRadius: "3px",
         cursor: "pointer",
     },
+    OpacityText: {
+        paddingRight: "3px",
+        paddingBottom: "3px",
+    },
+    TermContainer: {
+        height: "100vh"
+    },
+    TermWrapper: {
+        height: "calc(100% - 50px)",
+    }
 }
 
 exports.reduceUI = (state, action) => {
     switch (action.type) {
         case 'CHANGE_OPACITY':
             const { opacity } = action
-            return state.set('hitachiState', { opacity })
+            return state.set('hitachiState', Object.assign(
+                {},
+                state.hitachiState,
+                { opacity }
+            ))
+        case 'CHANGE_URL':
+            const { url } = action
+            return state.set('hitachiState', Object.assign(
+                {},
+                state.hitachiState,
+                { url }
+            ))
+        case 'CHANGE_IS_PLAYING':
+            const { isPlaying } = action
+            return state.set('hitachiState', Object.assign(
+                {},
+                state.hitachiState,
+                { isPlaying }
+            ))
+        case 'CHANGE_IS_MUTED':
+            const { isMuted } = action
+            return state.set('hitachiState', Object.assign(
+                {},
+                state.hitachiState,
+                { isMuted }
+            ))
         default:
             return state
     }
 }
 
-exports.mapTermsState = (state, map) => {
-    return Object.assign(map, {
-        hitachiState: state.ui.hitachiState,
+const mapPropsToState = (state, map) => (
+    Object.assign(map, {
+        hitachiState: state.ui.hitachiState || {
+            ...defaultStates
+        },
     })
-}
+)
 
-exports.decorateTerm = (Term) => {
+exports.mapTermsState = mapPropsToState
+exports.mapHyperState = mapPropsToState
+
+exports.decorateHyper = (Hyper) => {
     return class extends React.Component {
-        constructor(props) {
-            super(props)
-            const config = window.config.getConfig()
-            let state = {
-                isPlaying: true,
-                isMuted: false,
-                opacity: 0.8,
-                url: "https://www.youtube.com/embed/XJKCZMwo8Hw",
-            }
-
-            if (config.hitachi && config.hitachi.opacity) {
-                state = Object.assign({}, state, {
-                    opacity: config.hitachi.opacity
-                })
-            }
-
-            if (config.hitachi && config.hitachi.url) {
-                state = Object.assign({}, state, {
-                    url: config.hitachi.url
-                })
-            }
-
-            this.state = state
-
-            window.store.dispatch({
-                type: 'CHANGE_OPACITY',
-                opacity: this.state.opacity,
-            })
-        }
-
-        handleOpacityRangeChange = (e) => {
-            this.setState({ opacity: e.target.value / 100 })
-            window.store.dispatch({
-                type: 'CHANGE_OPACITY',
-                opacity: e.target.value / 100,
-            })
-        }
-
         render() {
-            const { opacity, url } = this.state
-
+            const { hitachiState: {
+                isMuted = defaultStates.isMuted,
+                isPlaying = defaultStates.isPlaying,
+                opacity = defaultStates.opacity,
+                url = defaultStates.url,
+            } } = this.props
             return (
-                <div style={{ height: "100vh" }}>
+                <div>
                     <ReactPlayer
                         url={url}
-                        playing={this.state.isPlaying}
                         loop
-                        muted={this.state.isMuted}
+                        playing={isPlaying}
+                        muted={isMuted}
                         width="100vw"
                         height="100vh"
                         style={
@@ -109,54 +122,93 @@ exports.decorateTerm = (Term) => {
                                 opacity
                             })
                         } />
-                    <div style={{ height: "calc(100% - 50px)" }}>
+                    <Hyper {...this.props} />
+                </div>
+            )
+        }
+    }
+}
+
+exports.decorateTerm = (Term) => {
+    return class extends React.Component {
+        constructor(props) {
+            super(props)
+            const config = window.config.getConfig()
+
+            if (config.hitachi && config.hitachi.opacity) {
+                window.store.dispatch({
+                    type: 'CHANGE_OPACITY',
+                    opacity: config.hitachi.opacity,
+                })
+            }
+
+            if (config.hitachi && config.hitachi.url) {
+                window.store.dispatch({
+                    type: 'CHANGE_URL',
+                    url: config.hitachi.url,
+                })
+            }
+        }
+
+        changeIsPlaying = (isPlaying) => {
+            window.store.dispatch({
+                type: 'CHANGE_IS_PLAYING',
+                isPlaying: isPlaying,
+            })
+        }
+
+        changeIsMuted = (isMuted) => {
+            window.store.dispatch({
+                type: 'CHANGE_IS_MUTED',
+                isMuted: isMuted,
+            })
+        }
+
+        handleOpacityRangeChange = (e) => {
+            window.store.dispatch({
+                type: 'CHANGE_OPACITY',
+                opacity: e.target.value / 100,
+            })
+        }
+
+        render() {
+            const { hitachiState: {
+                isMuted = defaultStates.isMuted,
+                isPlaying = defaultStates.isPlaying,
+                opacity = defaultStates.opacity,
+                url = defaultStates.url,
+            } } = this.props
+
+            return (
+                <div style={styles.TermContainer}>
+                    <div style={styles.TermWrapper}>
                         <Term {...this.props} opacity={opacity} />
                     </div>
                     <div style={styles.Panel}>
-                        {
-                            this.state.isMuted ? (
-                                <div
-                                    style={styles.PanelComponents}
-                                    onClick={() => { this.setState({ isMuted: false }) }}
-                                >
-                                    <VolumeUp style={styles.Icon} />
-                                </div>
-                            ) : (
-                                    <div
-                                        style={styles.PanelComponents}
-                                        onClick={() => { this.setState({ isMuted: true }) }}
-                                    >
-                                        <VolumeMute style={styles.Icon} />
-                                    </div>
-                                )
-                        }
-                        {
-                            this.state.isPlaying ? (
-                                <div
-                                    style={styles.PanelComponents}
-                                    onClick={() => { this.setState({ isPlaying: false }) }}
-                                >
-                                    <Pause style={styles.Icon} />
-                                </div>
-                            ) : (
-                                    <div
-                                        style={styles.PanelComponents}
-                                        onClick={() => { this.setState({ isPlaying: true }) }}
-                                    >
-                                        <PlayArrow style={styles.Icon} />
-                                    </div>
-                                )
-                        }
-                        <span style={{
-                            paddingRight: "3px",
-                            paddingBottom: "3px",
-                        }}>
+
+                        <div
+                            style={styles.PanelComponent}
+                            onClick={() => {
+                                this.changeIsMuted(!isMuted)
+                            }}
+                        >
+                            {isMuted ? <VolumeUp style={styles.Icon} /> : <VolumeMute style={styles.Icon} />}
+                        </div>
+                        <div
+                            style={styles.PanelComponent}
+                            onClick={() => {
+                                this.changeIsPlaying(!isPlaying)
+                            }}
+                        >
+                            {isPlaying ? <Pause style={styles.Icon} /> : <PlayArrow style={styles.Icon} />}
+                        </div>
+                        <span style={styles.OpacityText}>
                             Opacity
                         </span>
                         <input
                             type="range"
                             onChange={this.handleOpacityRangeChange}
-                            value={this.state.opacity * 100} />
+                            value={opacity * 100} />
                     </div>
                     <style jsx>{`
                         input[type="range"] {
@@ -197,6 +249,7 @@ exports.decorateTerm = (Term) => {
 const passProps = (uid, parentProps, props) => {
     return Object.assign(props, {
         backgroundColor: 'transparent',
+        hitachiState: parentProps.hitachiState,
     })
 }
 
