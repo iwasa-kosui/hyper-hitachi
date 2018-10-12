@@ -16,11 +16,12 @@ hyper i hyper-hitachi
 ```
 
 # Custom
-Open `~/.hyper.js` with your editor, and put the below
+Open `~/.hyper.js` with your editor, and add the below
 
-```
-{
+```js
+module.exports = {
    config: {
+       // **Add the below**
        hitachi: {
            // Change the movie
            url: "https://www.youtube.com/embed/Zd_PhaKDP0M",
