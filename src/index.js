@@ -101,6 +101,25 @@ exports.mapHyperState = mapPropsToState
 
 exports.decorateHyper = (Hyper) => {
     return class extends React.Component {
+        constructor(props) {
+            super(props)
+            const config = window.config.getConfig()
+
+            if (config.hitachi && config.hitachi.opacity) {
+                window.store.dispatch({
+                    type: 'CHANGE_OPACITY',
+                    opacity: config.hitachi.opacity,
+                })
+            }
+
+            if (config.hitachi && config.hitachi.url) {
+                window.store.dispatch({
+                    type: 'CHANGE_URL',
+                    url: config.hitachi.url,
+                })
+            }
+        }
+
         render() {
             const { hitachiState: {
                 isMuted = defaultStates.isMuted,
@@ -131,25 +150,6 @@ exports.decorateHyper = (Hyper) => {
 
 exports.decorateTerm = (Term) => {
     return class extends React.Component {
-        constructor(props) {
-            super(props)
-            const config = window.config.getConfig()
-
-            if (config.hitachi && config.hitachi.opacity) {
-                window.store.dispatch({
-                    type: 'CHANGE_OPACITY',
-                    opacity: config.hitachi.opacity,
-                })
-            }
-
-            if (config.hitachi && config.hitachi.url) {
-                window.store.dispatch({
-                    type: 'CHANGE_URL',
-                    url: config.hitachi.url,
-                })
-            }
-        }
-
         changeIsPlaying = (isPlaying) => {
             window.store.dispatch({
                 type: 'CHANGE_IS_PLAYING',
